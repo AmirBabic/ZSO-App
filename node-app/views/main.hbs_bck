@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Zivilschutz App - {{title}} </title>
+    <meta name="viewport" content="width=device-width; initial-scale=1.0;">
+	<link rel="stylesheet" type="text/css" href="/css/bootstrap.css"/>
+    <link rel="script" type="text/css" href="/css/bootstrap.css"/>
+    <link rel="script" type="text/css" href="/css/bootstrap-theme.css"/>
+    <link rel="manifest" href="/manifest.json">
+	<link rel="stylesheet" type="text/css" href="/sidenav.css"/>
+    <script src="/js/bootstrap.js"></script>
+</head>
+<body>
+
+	<div id="mySidenav" class="sidenav">
+		<a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+		{{{navigationHtml}}}
+	</div>
+
+	<div id="main">
+		<span style="font-size:26px;cursor:pointer" onclick="openNav()">&#9776;</span> <span style="font-size:40px;font-weight:bold;">{{title}}</span>
+		{{{contentHtml}}}
+		
+	</div>
+
+	
+	
+	<!-- Service worker registration -->
+    <script type="text/javascript">
+		if (navigator.serviceWorker.controller) {
+		  console.log('[PWA Builder] active service worker found, no need to register')
+		} else {
+		//Register the ServiceWorker
+		  navigator.serviceWorker.register('pwabuilder-sw.js', {
+			scope: './'
+		  }).then(function(reg) {
+			console.log('Service worker has been registered for scope:'+ reg.scope);
+		  });
+		}
+    </script>
+	
+	<script>
+		function openNav() {
+			document.getElementById("mySidenav").style.width = "350px";
+			document.getElementById("main").style.marginLeft = "350px";
+		}
+
+		function closeNav() {
+			document.getElementById("mySidenav").style.width = "0";
+			document.getElementById("main").style.marginLeft= "0";
+		}
+	</script>
+</body>
+</html>

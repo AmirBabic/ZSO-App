@@ -1,0 +1,122 @@
+* {
+    box-sizing: border-box;
+}
+
+body, html, section {
+  margin: 0;
+
+}
+
+body {
+    font-family: Helvetica, Arial, sans-serif;
+  
+}
+
+.maintitel {
+	padding-left: 10px;
+}
+
+.wrapper {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+.tiles {
+ border-top: 10px solid orange;   
+}
+
+.area {
+    width: 45%;
+    margin: 2%;
+    height: 1px;
+    padding-bottom: 45%;
+    overflow: hidden;
+    display: inline-block;
+    background-color: orange;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.area a {
+    display: block;
+    text-decoration: none;
+    width: 100%;
+    padding: 10px;
+    color: black;
+}
+
+
+.area h1 {
+    font-size: 40px;
+}
+
+.area h2 {
+    font-size: 20px;
+}
+
+.menu {
+    height: 40px;
+    width: 100%;
+    position: fixed !important;
+    bottom: 0;
+    padding: 10px 5px;
+    background-color: #efefef; 
+	box-shadow: 0px -3px 6px 0px rgba(222,222,222,1);    
+}
+
+
+.list {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    color: black;
+    border-top: 10px solid orange;
+    padding-top: 30px;
+}
+
+.list ul {
+margin: 0;
+padding: 0;
+}
+.list li {
+    list-style: none;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid gray;
+}
+
+.list a {
+    text-decoration: none;
+    color: black;
+}
+
+
+article {
+    border-top: 10px solid orange;
+    padding: 10px 30px;
+    line-height: 1.4em;
+    word-wrap: break-word;
+}
+
+article h1, article h2, article h3, article h4 {
+    line-height: 1.4em;
+}
+
+article h1 {
+    font-size: 24px;
+}
+
+
+article h2 {
+    font-size: 20px;
+}
+
+article h3 {
+    font-size: 16px;
+}
+
+article img {
+    max-width: 100%;
+}
+
+
