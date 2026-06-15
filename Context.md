@@ -3,24 +3,25 @@
 ## Zweck dieses Dokuments
 
 Dieses Dokument ist der zentrale Einstiegspunkt fuer den Neuaufbau der ZSO-App.
-Es haelt den bekannten Ist-Zustand, die Anforderungen, die bisher getroffenen
-Architekturentscheide sowie offene Fragen fest. Detailkonzepte sind unter
-[`docs/context/`](docs/context/) abgelegt und werden von hier verlinkt.
+Es haelt den bekannten Ist-Zustand, die Anforderungen, die getroffenen
+Architekturentscheide sowie offene Fragen fest. Detailkonzepte liegen unter
+[`docs/context/`](docs/context/).
 
 ## Projektziel
 
 Die bestehende ZSO-Applikation soll technisch neu aufgebaut werden. Bestehende
 Funktionen und Inhalte sollen erhalten, bereinigt und gezielt erweitert werden.
-Die Anwendung muss auch ohne Netzwerkverbindung einsatzfaehig bleiben.
+Die Architektur soll bewusst flach bleiben und nur Komponenten enthalten, die
+fuer die Anforderungen unmittelbar notwendig sind.
 
-Der Neuaufbau soll insbesondere folgende Funktionen abdecken:
+Der Neuaufbau soll folgende Funktionen abdecken:
 
 - bestehende Fachbereiche und Referenzinhalte
 - Handkarten
 - Informationen zum WK fuer Kader und Mannschaft
-- Formulare und lokale Formularentwuerfe
+- Formulare mit Verlauf und Detailansicht
 - ToDos
-- klar sichtbarer Offline- und Synchronisationsstatus
+- klar sichtbarer Online-/Offline-Status
 - App-, Build- und Inhaltsversion
 - Anmeldung, Rollen und Benutzerverwaltung
 - oeffentlich zugaengliche Inhalte ohne Anmeldung
@@ -30,7 +31,7 @@ Der Neuaufbau soll insbesondere folgende Funktionen abdecken:
 - Repository-Name lokal und auf GitHub: `ZSO-App`
 - Lokaler Pfad: `/Users/amir/Development/ZSO-App`
 - GitHub: `https://github.com/AmirBabic/ZSO-App`
-- Aktueller Hauptbranch: `main`
+- Hauptbranch: `main`
 
 ## Ist-Zustand
 
@@ -105,72 +106,144 @@ Schluessel muessen als kompromittiert behandelt und rotiert werden.
 
 Details: [Migration und Repository-Sicherheit](docs/context/migration-security.md)
 
-## Zielbild
+## Verbindliches Zielbild
 
-Die Anwendung soll als **statische Offline-first-PWA** neu entstehen. Fuer
-statische Fachinhalte ist im Produktivbetrieb kein Node.js-Server erforderlich.
-Ein kleiner Serverdienst wird nur fuer Anmeldung, zentrale Rechte,
-Synchronisation, ToDos und Formularuebermittlungen benoetigt.
+Die neue Anwendung bleibt eine einzelne Node.js-Anwendung:
 
-Die bisher favorisierte technische Richtung ist:
-
-- Astro mit TypeScript und statischem Build
-- Markdown Content Collections mit validierten Metadaten
-- Workbox-Service-Worker mit revisionierten Assets
-- Cache Storage fuer App-Dateien und statische Medien
-- IndexedDB fuer lokale strukturierte Daten
-- kleine Node.js-Sync-API
-- JSON/YAML-basierte serverseitige Speicherung statt SQLite
+- Node.js mit Express
+- servergerenderte Handlebars-Seiten
+- Markdown-Inhalte werden beim Start oder kontrolliert beim Deployment
+  eingelesen
+- Vanilla JavaScript fuer kleine Browserfunktionen
+- Service Worker nur fuer offlinefaehige Lesekacheln und deren Inhalte
+- JSON/YAML-Dateien fuer Benutzer, Rollen, Formulare und ToDos
+- genau eine schreibende Serverinstanz
 - HTTPS ueber Reverse Proxy beziehungsweise Synology
 
-Diese Auswahl ist eine begruendete Empfehlung, aber noch kein final
-freigegebener Technologieentscheid.
+Nicht eingesetzt werden:
+
+- Astro
+- React, Vue oder ein anderes Frontend-Framework
+- IndexedDB
+- clientseitige Offline-Datenbank
+- Offline-Synchronisationswarteschlange
+- feingranulare Berechtigungen pro Datei oder Aktion
 
 Details: [Zielarchitektur](docs/context/architecture.md)
 
+## Kachelmodell
+
+Die Startseite ist die zentrale fachliche und technische Struktur. Jede
+Funktion beziehungsweise jeder Inhaltsbereich ist eine Kachel, zum Beispiel:
+
+- Handkarten
+- WK-Informationen
+- Formulare
+- ToDos
+- Lage
+- Telematik
+- Unterstuetzung
+- NTP
+- Administration
+
+Die Berechtigung gilt immer fuer die gesamte Kachel. Es gibt keine
+Berechtigungen pro Markdown-Datei, PDF, Formularfeld oder Einzelaktion.
+Saemtliche Inhalte und Unterseiten einer Kachel erben deren Zugriffsstufe.
+
+Vorgesehene Rollenhierarchie:
+
+```text
+public < zso < nonCommissionedOfficer < officer < admin
+```
+
+Jede Kachel definiert nur:
+
+- `minimumRole`
+- `offline`
+
+Beispiel:
+
+```yaml
+tiles:
+  - id: handcards
+    title: Handkarten
+    minimumRole: public
+    offline: true
+
+  - id: forms
+    title: Formulare
+    minimumRole: zso
+    offline: false
+```
+
+Der Server blendet nicht erlaubte Kacheln aus und prueft dieselbe Regel bei
+jedem direkten Routenaufruf.
+
+Details: [Authentifizierung, Passwoerter und Rollen](docs/context/authentication.md)
+
 ## Offline-Grundsatz
 
-Die Anwendung muss zwischen drei Datenarten unterscheiden:
+Offline verfuegbar sind ausschliesslich Kacheln, die mit `offline: true`
+konfiguriert sind. Typischerweise sind dies lesende Referenzinhalte wie
+Handkarten, Fachinformationen, Bilder und ausgewaehlte PDFs.
 
-1. **Statische Inhalte:** App-Oberflaeche, Handkarten, Anleitungen, Bilder und
-   PDFs. Diese werden versioniert ausgeliefert und lokal gecacht.
-2. **Lokale Arbeitsdaten:** Formularentwuerfe, ToDos, Favoriten,
-   Synchronisationswarteschlange und Offline-Berechtigung. Diese liegen in
-   IndexedDB.
-3. **Zentrale Daten:** Benutzer, Rollen, freigegebene Formulare, zentrale ToDos
-   und Audit-Informationen. Diese liegen serverseitig in JSON/YAML-Dateien.
+Online-Funktionen werden nicht lokal nachgebaut. Bei fehlender Verbindung:
 
-Offline erfasste Aenderungen werden lokal gespeichert und spaeter
-synchronisiert. "Offline verwendbar" bedeutet nicht, dass mehrere voneinander
-getrennte Geraete ohne spaetere Serververbindung automatisch denselben
-Datenstand erhalten koennen.
+- Formulare sind deaktiviert.
+- ToDos sind deaktiviert.
+- Anmeldung und Abmeldung mit Serverkontakt sind deaktiviert.
+- Benutzerverwaltung ist deaktiviert.
+- Nicht offlinefaehige Kacheln werden ausgegraut.
+- Beim Klick erscheint die Meldung, dass die Funktion nur online verfuegbar ist.
 
-Details: [Offline-Daten und Synchronisation](docs/context/offline-sync.md)
+Es gibt keine lokalen Formularentwuerfe, keine lokalen ToDos und keine
+spaetere Synchronisation. Damit entfallen IndexedDB, Konfliktbehandlung und
+Sync-Queues.
+
+Geschuetzte Inhalte werden in der ersten Version nicht offline gespeichert.
+Damit bleiben Rollenpruefung und Sperrung serverseitig eindeutig. Falls spaeter
+geschuetzte Inhalte zwingend offline benoetigt werden, ist dafuer ein separates
+Sicherheitskonzept erforderlich.
+
+Details: [Offline-Verhalten](docs/context/offline-behavior.md)
+
+## Formulare
+
+Die Kachel `Formulare` ist eine Online-Funktion.
+
+Ablauf:
+
+1. Klick auf die Kachel oeffnet den Formularverlauf.
+2. Der Verlauf zeigt die fuer den angemeldeten Benutzer beziehungsweise dessen
+   Gruppenzugang sichtbaren gesendeten Formulare.
+3. Klick auf einen Eintrag oeffnet eine vollstaendige Read-only-Detailansicht.
+4. Auf der Verlaufsseite befindet sich die Aktion `Formular erstellen`.
+5. Nach Auswahl des Formulartyps wird das Formular ausgefuellt und gesendet.
+6. Nach erfolgreichem Speichern erscheint es im Verlauf.
+
+In der ersten Version gibt es keine Offline-Entwuerfe und kein nachtraegliches
+Synchronisieren. Formulare werden als einzelne JSON-Dateien gespeichert.
+
+Details: [Formularablauf](docs/context/forms.md)
 
 ## Benutzer- und Rollenmodell
 
-Vorgesehene Rollen:
-
 | Rolle | Anmeldung | Typischer Zugriff |
 | --- | --- | --- |
-| Oeffentlich | nein | freigegebene oeffentliche Inhalte |
-| ZSO User | Gruppenlogin oder persoenlich | interne Basisinformationen |
-| Unteroffizier | Gruppenlogin oder persoenlich | Uof-Inhalte, Formulare, ToDos |
-| Offizier | Gruppenlogin oder persoenlich | Fuehrungs- und Kaderinformationen |
-| Admin | zwingend persoenlich | Benutzer, Rollen, Inhalte und Konfiguration |
+| Oeffentlich | nein | oeffentliche Offline- und Online-Kacheln |
+| ZSO User | Gruppenlogin oder persoenlich | interne Basisfunktionen |
+| Unteroffizier | Gruppenlogin oder persoenlich | Uof-/Kaderkacheln |
+| Offizier | Gruppenlogin oder persoenlich | Offizierskacheln |
+| Admin | zwingend persoenlich | Administration |
 
 Nicht jede Person benoetigt einen persoenlichen Account. Fuer ZSO User,
 Unteroffiziere und Offiziere sind rotierende Gruppenzugaenge moeglich. Ein
 Gruppenzugang kann eine konkrete Person jedoch nicht beweissicher
-identifizieren. Verbindliche oder personenbezogene Formulare brauchen deshalb
-entweder einen persoenlichen Account oder eine explizite, als nicht verifiziert
-markierte Namensangabe.
+identifizieren.
 
 Benutzerdateien und Passwort-Hashes bleiben ausschliesslich auf dem Server. Sie
-duerfen niemals Bestandteil der ausgelieferten PWA oder eines Offline-Pakets
+duerfen niemals Bestandteil der ausgelieferten PWA oder eines Offline-Caches
 sein.
-
-Details: [Authentifizierung, Passwoerter und Rollen](docs/context/authentication.md)
 
 ## Dateibasierte Serverdaten
 
@@ -179,10 +252,14 @@ Vorgeschlagene Struktur:
 ```text
 data/
   auth.yaml
+  tiles.yaml
   todos.json
-  form-submissions/
-    2026/
-      <uuid>.json
+  forms/
+    definitions/
+      material-request.yaml
+    submissions/
+      2026/
+        <uuid>.json
   audit/
     2026-06.jsonl
 ```
@@ -190,36 +267,14 @@ data/
 Regeln:
 
 - `auth.yaml` enthaelt Rollen, Gruppen und Benutzer mit Passwort-Hashes.
-- Formulare werden als einzelne JSON-Dateien gespeichert.
+- `tiles.yaml` enthaelt Kacheln, minimale Rolle und Offline-Status.
+- Formularvorlagen sind YAML-Dateien.
+- Gesendete Formulare werden einzeln als JSON gespeichert.
 - Das Audit-Protokoll ist append-only im JSON-Lines-Format.
 - Dateien werden ueber temporaere Dateien und atomare Umbenennung geschrieben.
 - Schreibzugriffe werden innerhalb des Serverprozesses serialisiert.
 - Es darf nur eine schreibende Serverinstanz geben.
-- Secrets und Signaturschluessel liegen ausserhalb des Repositories.
-
-Wenn spaeter mehrere Serverinstanzen gleichzeitig schreiben oder wesentlich
-mehr Transaktionen entstehen, muss das Speichermodell neu bewertet werden.
-
-## Inhalts- und Rechtekonzept
-
-Jeder Inhalt soll strukturierte Metadaten erhalten, beispielsweise:
-
-```yaml
-title: Einsatzfuehrung
-section: fuehrungsunterstuetzung
-visibility: officer
-order: 20
-tags:
-  - fuehrung
-  - einsatz
-offlinePack: officer
-updatedAt: 2026-06-15
-```
-
-Interne Inhalte duerfen nicht nur in der Benutzeroberflaeche versteckt werden.
-Oeffentliche und geschuetzte Offline-Pakete muessen technisch getrennt sein.
-Geschuetzte Inhalte werden erst nach erfolgreicher Berechtigungspruefung auf das
-Geraet geladen.
+- Secrets und TLS-Schluessel liegen ausserhalb des Repositories.
 
 ## Versionierung
 
@@ -230,48 +285,46 @@ App: 1.0.0
 Build: 2026-06-15T14:32:18Z
 Commit: a92f70c
 Inhalte: 2026.06.15-2
-Letzte Synchronisation: 15.06.2026 16:40
 ```
 
-Zusaetzlich erhalten Handkarten, WK-Informationen und Formularvorlagen eigene
+Handkarten, WK-Informationen und Formularvorlagen erhalten bei Bedarf eigene
 fachliche Revisionen. Ein Timestamp allein reicht nicht fuer nachvollziehbare
 Releases.
 
 ## Vorgeschlagene Umsetzungsreihenfolge
 
 1. Schluessel rotieren und Git-Historie bereinigen.
-2. Aktuelle Funktionen und Inhalte als Abnahmekatalog erfassen.
-3. Rollen, Berechtigungen und Datenklassifikation fachlich festlegen.
-4. Neue statische PWA parallel zur Altanwendung aufbauen.
-5. Inhaltsimport, Linkpruefung und Metadatenvalidierung implementieren.
-6. Bestehende Navigation, Artikel, Bilder und PDFs migrieren.
-7. Offline-Pakete, versionierte Updates und Wiederherstellung bauen.
-8. IndexedDB und Synchronisationswarteschlange implementieren.
-9. ToDos und datengetriebene Formulare ergaenzen.
-10. Dateibasierte Auth-/Sync-API implementieren.
-11. Offline-Anmeldung und lokale Schutzmechanismen umsetzen.
-12. Mobile, Offline-, Update-, Speicher- und Konflikttests durchfuehren.
-13. Pilotbetrieb und anschliessende Umschaltung.
+2. Bestehende Funktionen und Inhalte als Abnahmekatalog erfassen.
+3. Kacheln, Rollenhierarchie und `minimumRole` festlegen.
+4. Bestehende Express-Anwendung strukturiert neu aufsetzen.
+5. Reproduzierbares `package.json`, Tests und CI einfuehren.
+6. Inhaltsimport, Linkpruefung und Navigation implementieren.
+7. Service Worker fuer explizit offlinefaehige Lesekacheln implementieren.
+8. Anmeldung und serverseitige Kachelpruefung implementieren.
+9. Formularverlauf, Detailansicht und Erstellung implementieren.
+10. ToDos und Administration als Online-Funktionen ergaenzen.
+11. Mobile, Offline-, Rollen- und Update-Tests durchfuehren.
+12. Pilotbetrieb und anschliessende Umschaltung.
 
 ## Offene fachliche Fragen
 
 - Sind "Handkarten" fachliche Merk- und Checkkarten oder geografische Karten?
-- Welche Inhalte sind oeffentlich, intern, Uof-, Offiziers- oder Admin-Inhalte?
-- Welche Formulare sind nur Entwuerfe und welche gelten als verbindlich
-  eingereicht?
+- Welche Kacheln sind fuer welche minimale Rolle sichtbar?
+- Welche Kacheln sollen tatsaechlich offline verfuegbar sein?
+- Welche Formulartypen werden benoetigt?
+- Welche Formulare darf ein Gruppenlogin im Verlauf sehen?
 - Muessen Formulare einer verifizierten Person zugeordnet werden?
 - Duerfen WK-Informationen Personendaten enthalten?
-- Wie lange darf eine Offline-Berechtigung ohne erneute Serverpruefung gelten?
 - Wie oft werden Gruppenzugangscodes rotiert?
 - Wer darf ToDos erstellen, zuweisen, abschliessen und loeschen?
 - Wird die Anwendung nur von einer ZSO oder von mehreren Organisationen genutzt?
 - Welche Geraete und Browser muessen verbindlich unterstuetzt werden?
-- Wie gross darf ein vollstaendiges Offline-Paket maximal sein?
 
 ## Detaildokumente
 
 - [Zielarchitektur](docs/context/architecture.md)
-- [Offline-Daten und Synchronisation](docs/context/offline-sync.md)
+- [Offline-Verhalten](docs/context/offline-behavior.md)
+- [Formularablauf](docs/context/forms.md)
 - [Authentifizierung, Passwoerter und Rollen](docs/context/authentication.md)
 - [Migration und Repository-Sicherheit](docs/context/migration-security.md)
 

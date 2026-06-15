@@ -7,37 +7,46 @@
 - Passwoerter werden niemals im Klartext gespeichert oder protokolliert.
 - Admin-Zugaenge sind immer persoenlich.
 - Gruppenzugaenge sind moeglich, koennen aber keine Person sicher identifizieren.
-- Rollen werden in konkrete Berechtigungen aufgeloest.
+- Berechtigungen gelten pro Kachel, nicht pro Datei oder Einzelaktion.
+- Anmeldung und geschuetzte Funktionen sind online-only.
 
-## Rollen
-
-Vorgesehene Hierarchie:
-
-```text
-public
-  -> zso
-      -> nonCommissionedOfficer
-          -> officer
-              -> admin
-```
-
-Eine reine Hierarchie reicht langfristig nicht fuer alle Regeln. Intern sollte
-die Anwendung deshalb Berechtigungen pruefen:
+## Rollenhierarchie
 
 ```text
-content.public.read
-content.internal.read
-content.uof.read
-content.officer.read
-forms.create
-forms.submit
-todos.read
-todos.create
-todos.assign
-users.manage
+public < zso < nonCommissionedOfficer < officer < admin
 ```
 
-Rollen sind Sammlungen solcher Berechtigungen.
+Technisch wird jeder Rolle ein fester Rang zugeordnet:
+
+```yaml
+roles:
+  public: 0
+  zso: 1
+  nonCommissionedOfficer: 2
+  officer: 3
+  admin: 4
+```
+
+Jede Kachel besitzt genau eine minimale Rolle:
+
+```yaml
+tiles:
+  - id: handcards
+    minimumRole: public
+    offline: true
+
+  - id: forms
+    minimumRole: zso
+    offline: false
+
+  - id: officer-info
+    minimumRole: officer
+    offline: false
+```
+
+Eine Rolle darf auf die Kachel zugreifen, wenn ihr Rang mindestens dem Rang von
+`minimumRole` entspricht. Damit wird keine Liste granularer Permissions
+benoetigt.
 
 ## Benutzer- und Gruppendatei
 
@@ -47,40 +56,25 @@ Beispiel fuer `data/auth.yaml`:
 version: 1
 
 roles:
-  public:
-    permissions:
-      - content.public.read
-
-  zso:
-    inherits: public
-    permissions:
-      - content.internal.read
-      - forms.create
-      - forms.submit
-      - todos.read
-
-  nonCommissionedOfficer:
-    inherits: zso
-    permissions:
-      - content.uof.read
-      - todos.create
-
-  officer:
-    inherits: nonCommissionedOfficer
-    permissions:
-      - content.officer.read
-      - todos.assign
-
-  admin:
-    inherits: officer
-    permissions:
-      - users.manage
+  public: 0
+  zso: 1
+  nonCommissionedOfficer: 2
+  officer: 3
+  admin: 4
 
 principals:
   - id: group-zso-wk-2026
     type: group
     role: zso
     displayName: ZSO WK 2026
+    passwordHash: "$argon2id$..."
+    enabled: true
+    validUntil: "2026-12-31T23:59:59Z"
+
+  - id: group-officer-wk-2026
+    type: group
+    role: officer
+    displayName: Offiziere WK 2026
     passwordHash: "$argon2id$..."
     enabled: true
     validUntil: "2026-12-31T23:59:59Z"
@@ -94,9 +88,8 @@ principals:
     enabled: true
 ```
 
-Die Datei darf nicht durch den statischen Webserver ausgeliefert werden. Der
-Serverprozess laedt sie und gibt nur notwendige, nicht sensitive Profildaten
-zurueck.
+Die Datei liegt ausserhalb des statischen Webroots. Express liest sie
+serverseitig und liefert nur notwendige Profildaten aus.
 
 ## Passwortmanagement
 
@@ -105,8 +98,7 @@ zurueck.
 - Argon2id verwenden.
 - Pro Passwort wird automatisch ein eigener Salt erzeugt.
 - Parameter werden anhand der Zielhardware festgelegt und dokumentiert.
-- Hashes werden bei erfolgreicher Anmeldung aktualisiert, wenn neue Parameter
-  gelten.
+- Hashes bei erfolgreicher Anmeldung aktualisieren, wenn neue Parameter gelten.
 - Keine selbst entworfene Verschluesselung und kein schneller SHA-Hash.
 
 ### Gruppenzugangscodes
@@ -122,83 +114,69 @@ zurueck.
 - persoenlicher Benutzername
 - eigenes Passwort
 - keine gemeinsam verwendeten Admin-Konten
-- kurze Online-Sitzung
-- Aenderungen an Benutzern und Rollen im Audit-Protokoll erfassen
+- Aenderungen an Benutzern und Rollen protokollieren
 
-## Online-Anmeldung
+## Anmeldung und Sitzung
 
-1. Geraet sendet Benutzername beziehungsweise Gruppen-ID und Passwort ueber
+1. Benutzer sendet Benutzername beziehungsweise Gruppen-ID und Passwort ueber
    HTTPS.
-2. Server prueft Hash, Gueltigkeit, Sperrstatus und Rate Limit.
-3. Server gibt eine kurzlebige Online-Sitzung sowie optional eine signierte
-   Offline-Berechtigung aus.
-4. Die App speichert keine eingegebenen Passwoerter.
+2. Server prueft Passwort-Hash, Gueltigkeit, Sperrstatus und Rate Limit.
+3. Server erstellt eine normale serverseitige Sitzung.
+4. Der Browser erhaelt nur ein sicheres Session-Cookie.
+5. Jede geschuetzte Route prueft Sitzung, Rolle und Kachel.
 
-## Offline-Anmeldung
+Empfohlene Cookie-Eigenschaften:
 
-Eine erste Anmeldung muss online erfolgen. Danach kann der Server eine
-signierte Berechtigung ausstellen:
-
-```json
-{
-  "subject": "group-zso-wk-2026",
-  "principalType": "group",
-  "role": "zso",
-  "permissions": [
-    "content.public.read",
-    "content.internal.read",
-    "forms.create"
-  ],
-  "deviceId": "73b6...",
-  "issuedAt": "2026-06-15T12:00:00Z",
-  "expiresAt": "2026-06-22T12:00:00Z"
-}
+```text
+HttpOnly
+Secure
+SameSite=Lax
 ```
 
-Die Berechtigung wird vom Server signiert. Die PWA kann sie mit einem
-eingebetteten oeffentlichen Schluessel pruefen, aber nicht selbst erweitern oder
-neu ausstellen.
+Die Sitzung kann in einer kleinen serverseitigen JSON-Datei oder im
+Prozessspeicher liegen. Prozessspeicher ist einfacher, meldet Benutzer bei einem
+Serverneustart jedoch ab. Das ist fuer die erste Version vertretbar.
 
-Optional kann ein lokaler PIN den Zugriff auf die gespeicherte Berechtigung und
-lokale Arbeitsdaten erschweren. Ein PIN ersetzt keine Serveranmeldung und bietet
-in einer normalen PWA keinen mit einem verwalteten Betriebssystemschluessel
-vergleichbaren Schutz.
+## Offline-Verhalten
 
-## Sperrung und Ablauf
+Es gibt keine Offline-Anmeldung und keine lokal gespeicherte
+Offline-Berechtigung.
 
-Ein bereits offline befindliches Geraet kann eine serverseitige Sperrung nicht
-sofort erfahren. Darum muss jede Offline-Berechtigung ablaufen.
+Bei fehlender Verbindung:
 
-Die konkrete Dauer ist fachlich festzulegen. Beispiel:
+- Loginformular beziehungsweise Loginaktion ist deaktiviert.
+- geschuetzte Kacheln sind nicht offline verfuegbar
+- Online-Funktionen werden ausgegraut
+- bereits gecachte oeffentliche Kacheln bleiben lesbar
 
-- Gruppenzugang: maximal 7 Tage offline
-- persoenlicher Offizierszugang: maximal 3 Tage offline
-- Admin-Funktionen: keine Offline-Benutzerverwaltung
+Damit kann eine serverseitige Sperrung nicht durch alte lokale
+Berechtigungsdaten umgangen werden.
 
-Benutzerverwaltung kann offline vorbereitet werden, Aenderungen werden aber
-erst nach Serverkontakt wirksam.
+## Kachelzugriff
 
-## Inhaltszugriff
+Eine gemeinsame Middleware erhaelt die Kachel-ID:
 
-Geschuetzte Inhalte muessen in getrennten Paketen ausgeliefert werden. Eine
-Datei ist nicht geschuetzt, wenn sie bereits oeffentlich heruntergeladen wurde
-und lediglich in der Navigation ausgeblendet wird.
+```text
+requireTileAccess("forms")
+```
 
-Vor jedem Paketdownload prueft die API:
+Sie prueft:
 
-- gueltige Berechtigung
-- erforderliche Permission
-- Gueltigkeitszeitraum
-- optional Organisationszugehoerigkeit
+1. Existiert die Kachel?
+2. Ist eine Anmeldung erforderlich?
+3. Besitzt die aktuelle Rolle mindestens `minimumRole`?
+4. Ist die Funktion online erreichbar?
+
+Alle Unterrouten derselben Kachel verwenden dieselbe Middleware.
 
 ## Identitaet bei Formularen
 
-Bei Gruppenzugaengen kann der Server nur die Gruppe und das Geraet erkennen.
-Moegliche Kennzeichnung:
+Bei Gruppenzugaengen kann der Server nur die Gruppe identifizieren. Eine
+optionale Namensangabe ist nicht verifiziert:
 
 ```json
 {
-  "authenticatedPrincipal": "group-zso-wk-2026",
+  "principalId": "group-zso-wk-2026",
   "principalType": "group",
   "submittedName": "Max Muster",
   "nameVerified": false
@@ -213,11 +191,11 @@ Identitaetsnachweis.
 
 Folgende Werte gehoeren nicht in Git:
 
-- Signaturschluessel
+- Session-Schluessel
 - Passwort-Pepper, falls verwendet
 - TLS-Private-Keys
 - Produktionskonfiguration mit geheimen Werten
 
-Sie werden ueber geschuetzte Umgebungsvariablen oder einen Secret Store des
+Sie werden ueber geschuetzte Umgebungsvariablen oder den Secret Store des
 Betriebssystems bereitgestellt.
 
