@@ -1,0 +1,21 @@
+{
+  "name": "zso-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline-fähige ZSO-Referenz- und Arbeitsapplikation",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "5.2.1",
+    "express-handlebars": "9.0.1",
+    "marked": "18.0.5",
+    "yaml": "2.9.0"
+  }
+}

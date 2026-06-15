@@ -1,0 +1,10 @@
+version: 1
+
+roles:
+  public: 0
+  zso: 1
+  nonCommissionedOfficer: 2
+  officer: 3
+  admin: 4
+
+principals: []

@@ -104,9 +104,11 @@ Im Repository waren 17 Zertifikats- und Schlüsseldateien unter
 dem aktuellen Repository-Stand entfernt. `.gitignore` blockiert den Ordner und
 gängige Zertifikats-/Schlüsselformate.
 
-Die Dateien befinden sich weiterhin in der bisherigen Git-Historie, solange
-diese nicht neu geschrieben und force-gepusht wurde. Betroffene Zertifikate und
-Schlüssel müssen als kompromittiert behandelt und rotiert werden.
+Die 17 Dateien wurden am 15. Juni 2026 aus der gesamten erreichbaren
+Git-Historie entfernt. Branches, interne Sicherungsreferenzen, Reflogs und nicht
+mehr erreichbare Objekte wurden bereinigt. `main` wurde anschließend mit
+`--force-with-lease` auf GitHub veröffentlicht. Eine Schlüsselrotation ist
+gemäß Projektentscheid nicht Teil dieses Auftrags.
 
 Details: [Migration und Repository-Sicherheit](docs/context/migration-security.md)
 
@@ -134,6 +136,19 @@ Nicht eingesetzt werden:
 - feingranulare Berechtigungen pro Datei oder Aktion
 
 Details: [Zielarchitektur](docs/context/architecture.md)
+
+## Umsetzungsstand
+
+Der Neuaufbau wurde mit Version `0.1.0` begonnen:
+
+- flache Node.js-/Express-Anwendung im Repository-Wurzelverzeichnis
+- servergerenderte Handlebars-Oberfläche
+- Kachel- und Rollenkonfiguration über YAML
+- Einbindung der bestehenden Inhalte für Lage, Telematik, Unterstützung und NTP
+- öffentlicher Offline-Cache mit versionsgebundenem Service Worker
+- vorbereitete Kacheln für Handkarten, WK, Formulare, ToDos und Administration
+- Beispielstrukturen für Benutzer, WK-Daten und ToDos
+- automatisierte Tests für Rollen, Kacheln, Inhalte und Offline-Abgrenzung
 
 ## Kachelmodell
 
@@ -348,11 +363,11 @@ organisationsübergreifende Datenhaltung sind keine Anforderungen.
 
 ## Vorgeschlagene Umsetzungsreihenfolge
 
-1. Schlüssel rotieren und Git-Historie bereinigen.
-2. Bestehende Funktionen und Inhalte als Abnahmekatalog erfassen.
-3. Kacheln und Rollenhierarchie konfigurieren.
-4. Bestehende Express-Anwendung strukturiert neu aufsetzen.
-5. Reproduzierbares `package.json`, Tests und CI einführen.
+1. Git-Historie bereinigen. (Abgeschlossen)
+2. Bestehende Funktionen und Inhalte als Abnahmekatalog erfassen. (Begonnen)
+3. Kacheln und Rollenhierarchie konfigurieren. (Grundlage umgesetzt)
+4. Bestehende Express-Anwendung strukturiert neu aufsetzen. (Grundlage umgesetzt)
+5. Reproduzierbares `package.json`, Tests und CI einführen. (Ohne CI umgesetzt)
 6. Bestehende Inhalte und Handkarten migrieren.
 7. Service Worker für öffentliche Offline-Lesekacheln implementieren.
 8. Anmeldung, Admin-Sonderrolle und Kachelprüfung implementieren.

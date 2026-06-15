@@ -1,0 +1,18 @@
+<nav class="breadcrumbs" aria-label="Brotkrumen">
+  <a href="/">Übersicht</a>
+  <span aria-hidden="true">/</span>
+  <span>{{tile.title}}</span>
+</nav>
+
+<section class="page-heading">
+  <p class="eyebrow">{{tile.subtitle}}</p>
+  <h1>{{title}}</h1>
+</section>
+
+<ul class="content-list">
+  {{#each entries}}
+    <li><a href="{{url}}">{{title}}</a></li>
+  {{else}}
+    <li>Für diesen Bereich sind noch keine Inhalte vorhanden.</li>
+  {{/each}}
+</ul>

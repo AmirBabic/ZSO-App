@@ -1,0 +1,23 @@
+<section class="page-heading">
+  <p class="eyebrow">Zivilschutz</p>
+  <h1>{{title}}</h1>
+  <p>Referenzinhalte und Arbeitsfunktionen nach Fachbereich.</p>
+</section>
+
+<section class="tile-grid" aria-label="Fachbereiche und Funktionen">
+  {{#each tiles}}
+    <a
+      class="tile{{#if onlineOnly}} tile--online{{/if}}"
+      href="{{route}}"
+      {{#if onlineOnly}}data-online-only{{/if}}
+    >
+      <span class="tile__title">{{title}}</span>
+      <span class="tile__subtitle">{{subtitle}}</span>
+      {{#if onlineOnly}}
+        <span class="tile__status">Nur online</span>
+      {{else}}
+        <span class="tile__status">Offline verfügbar</span>
+      {{/if}}
+    </a>
+  {{/each}}
+</section>

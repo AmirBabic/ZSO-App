@@ -1,0 +1,76 @@
+tiles:
+  - id: lage
+    title: Lage
+    subtitle: Führungsunterstützung
+    route: /content/lage
+    kind: content
+    directory: Lage
+    minimumRole: public
+    offline: true
+
+  - id: telematik
+    title: Telematik
+    subtitle: Führungsunterstützung
+    route: /content/telematik
+    kind: content
+    directory: Telematik
+    minimumRole: public
+    offline: true
+
+  - id: unterstuetzung
+    title: Unterstützung
+    subtitle: Unterstützung
+    route: /content/unterstuetzung
+    kind: content
+    directory: Unterstützung
+    minimumRole: public
+    offline: true
+
+  - id: ntp
+    title: NTP
+    subtitle: Notfalltreffpunkt
+    route: /content/ntp
+    kind: content
+    directory: NTP
+    minimumRole: public
+    offline: true
+
+  - id: handkarten
+    title: Handkarten
+    subtitle: Merk- und Checkkarten
+    route: /handkarten
+    kind: placeholder
+    minimumRole: public
+    offline: true
+
+  - id: wk
+    title: Infos zum WK
+    subtitle: Kader und Mannschaft
+    route: /wk
+    kind: placeholder
+    minimumRole: zso
+    offline: false
+
+  - id: formulare
+    title: Formulare
+    subtitle: Verlauf und Erfassung
+    route: /formulare
+    kind: placeholder
+    minimumRole: zso
+    offline: false
+
+  - id: todos
+    title: ToDos
+    subtitle: Aufträge und Status
+    route: /todos
+    kind: placeholder
+    minimumRole: zso
+    offline: false
+
+  - id: administration
+    title: Administration
+    subtitle: Benutzer und Konfiguration
+    route: /administration
+    kind: placeholder
+    minimumRole: admin
+    offline: false

@@ -24,20 +24,25 @@ enthält Regeln für:
 *.cer
 ```
 
-## Noch erforderliche Massnahmen
+## Durchgeführte Historienbereinigung
 
-Das Löschen in einem neuen Commit entfernt Secrets nicht aus alten Commits.
-Erforderlich sind:
+Am 15. Juni 2026 wurde der Pfad `node-app/RuHuro/` aus allen erreichbaren
+Commits entfernt. Dazu wurde die Historie neu geschrieben und anschließend:
 
-1. Betroffene Zertifikate und Schlüssel widerrufen oder ersetzen.
-2. Neue Schlüssel erzeugen.
-3. Alte Schlüssel nicht erneut in das Repository kopieren.
-4. Git-Historie mit `git filter-repo` oder BFG bereinigen.
-5. Bereinigte Branches und Tags force-pushen.
-6. Lokale Klone auf die bereinigte Historie umstellen.
-7. Erneut nach privaten Schlüsselmarkern suchen.
+1. wurden ursprüngliche Sicherungsreferenzen entfernt,
+2. wurden Reflogs abgelaufen gelassen,
+3. wurden nicht mehr erreichbare Git-Objekte bereinigt,
+4. wurde erneut nach dem entfernten Pfad und privaten Schlüsselmarkern gesucht,
+5. wurde `main` mit `--force-with-lease` auf GitHub veröffentlicht.
 
-Ein History-Rewrite verändert Commit-IDs und muss koordiniert werden.
+Die Prüfungen fanden weder den entfernten Pfad noch private Schlüsselmarker in
+der erreichbaren Historie. Die Commit-IDs vor der Bereinigung sind dadurch
+ungültig. Weitere lokale Klone müssen auf die neu geschriebene Historie
+umgestellt oder neu geklont werden.
+
+Eine Rotation der früher eingecheckten Schlüssel wurde gemäß Projektentscheid
+nicht durchgeführt. Unabhängig davon dürfen Schlüssel nicht erneut in das
+Repository kopiert werden.
 
 ## Repository-Bereinigung
 
@@ -51,11 +56,11 @@ Beim Neuaufbau nicht mehr tracken:
 - ACME-Challenge-Dateien
 - lokal kopierte Zertifikatsordner
 
-## Empfohlene Schutzmassnahmen
+## Empfohlene Schutzmaßnahmen
 
 - Secret-Scanning in CI aktivieren.
 - Dependency- und Vulnerability-Scanning aktivieren.
-- Produktionsdaten ausserhalb des statischen Webroots speichern.
+- Produktionsdaten außerhalb des statischen Webroots speichern.
 - Dateirechte auf den Dienstbenutzer beschränken.
 - Backups verschlüsseln und Wiederherstellung testen.
 - Audit-Dateien append-only behandeln.
@@ -73,7 +78,7 @@ Der bestehende Content wird automatisiert eingelesen und validiert:
 7. Alte absolute Synology-Links in interne Links umwandeln.
 8. Backup- und Template-Inhalte von produktiven Inhalten trennen.
 9. Fachliches Frontmatter mit Titel, Reihenfolge und Revision ergänzen.
-10. Rolle und Offline-Status ausschliesslich an der Kachel konfigurieren.
+10. Rolle und Offline-Status ausschließlich an der Kachel konfigurieren.
 11. Redirect-Liste für bestehende URLs erzeugen.
 12. CI bei defekten Links oder fehlenden Assets fehlschlagen lassen.
 
@@ -83,13 +88,12 @@ Vor der Ablösung der Altanwendung wird getestet:
 
 - Startseite und Fachbereiche
 - jede aktive Inhaltsseite
-- Bilder und Bildvergrösserung
+- Bilder und Bildvergrößerung
 - PDFs und interne Links
 - Offline-Erstinstallation und Offline-Neustart
 - Updates und unvollständige Updates
-- Kachelbasierter Rollenzugriff
+- kachelbasierter Rollenzugriff
 - Formular-Lesestufen inklusive implizitem Admin-Zugriff
 - hierarchische ToDo-Regeln
 - WK-Zugriff nur für eingetragene Principals
 - Zielbrowser und reale Mobilgeräte
-
