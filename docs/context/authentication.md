@@ -1,14 +1,14 @@
-# Authentifizierung, Passwoerter und Rollen
+# Authentifizierung, Passwörter und Rollen
 
 ## Grundregeln
 
 - Passwortdaten bleiben ausschliesslich auf dem Server.
-- Die PWA erhaelt niemals `auth.yaml` oder Passwort-Hashes.
-- Passwoerter werden niemals im Klartext gespeichert oder protokolliert.
-- Admin-Zugaenge sind immer persoenlich.
-- Gruppenzugaenge sind moeglich, koennen aber keine Person sicher identifizieren.
+- Die PWA erhält niemals `auth.yaml` oder Passwort-Hashes.
+- Passwörter werden niemals im Klartext gespeichert oder protokolliert.
+- Admin-Zugänge sind immer persönlich.
+- Gruppenzugänge sind möglich, können aber keine Person sicher identifizieren.
 - Berechtigungen gelten pro Kachel, nicht pro Datei oder Einzelaktion.
-- Anmeldung und geschuetzte Funktionen sind online-only.
+- Anmeldung und geschützte Funktionen sind online-only.
 
 ## Rollenhierarchie
 
@@ -27,11 +27,26 @@ roles:
   admin: 4
 ```
 
-Jede Kachel besitzt genau eine minimale Rolle:
+Jede Kachel besitzt eine minimale Rolle. Zugriff besteht, wenn der Rollenrang
+mindestens `minimumRole` entspricht.
+
+## Admin-Sonderregel
+
+Admin:
+
+- hat immer Zugriff auf alle Kacheln, Formulare, ToDos und WK-Daten
+- besitzt alle administrativen Funktionen
+- wird in fachlichen Zielauswahlen nie als Option angezeigt
+- wird insbesondere nicht in der Formular-Lesestufe oder ToDo-Zielrolle
+  angeboten
+
+Admin-Zugriff ist implizit und muss nicht in jedem Datensatz gespeichert werden.
+
+## Kachelbeispiele
 
 ```yaml
 tiles:
-  - id: handcards
+  - id: lage
     minimumRole: public
     offline: true
 
@@ -42,15 +57,18 @@ tiles:
   - id: officer-info
     minimumRole: officer
     offline: false
+
+  - id: admin
+    minimumRole: admin
+    offline: false
 ```
 
-Eine Rolle darf auf die Kachel zugreifen, wenn ihr Rang mindestens dem Rang von
-`minimumRole` entspricht. Damit wird keine Liste granularer Permissions
-benoetigt.
+Die bestehenden Kacheln Lage, Telematik, Unterstützung und NTP sind
+`public` und `offline: true`.
 
 ## Benutzer- und Gruppendatei
 
-Beispiel fuer `data/auth.yaml`:
+Beispiel für `data/auth.yaml`:
 
 ```yaml
 version: 1
@@ -88,8 +106,7 @@ principals:
     enabled: true
 ```
 
-Die Datei liegt ausserhalb des statischen Webroots. Express liest sie
-serverseitig und liefert nur notwendige Profildaten aus.
+Die Datei liegt ausserhalb des statischen Webroots.
 
 ## Passwortmanagement
 
@@ -99,31 +116,33 @@ serverseitig und liefert nur notwendige Profildaten aus.
 - Pro Passwort wird automatisch ein eigener Salt erzeugt.
 - Parameter werden anhand der Zielhardware festgelegt und dokumentiert.
 - Hashes bei erfolgreicher Anmeldung aktualisieren, wenn neue Parameter gelten.
-- Keine selbst entworfene Verschluesselung und kein schneller SHA-Hash.
+- Keine selbst entworfene Verschlüsselung und kein schneller SHA-Hash.
 
 ### Gruppenzugangscodes
 
-- separate Codes fuer ZSO User, Unteroffiziere und Offiziere
-- zeitliche Gueltigkeit pro WK oder definierter Periode
+- separate Codes für ZSO User, Unteroffiziere und Offiziere
+- zeitliche Gültigkeit pro WK oder definierter Periode
 - sofortige Rotation bei Weitergabe an unberechtigte Personen
-- niemals denselben Code fuer Admin-Zugang verwenden
+- niemals denselben Code für Admin-Zugang verwenden
 - Loginversuche serverseitig begrenzen und protokollieren
 
-### Admin-Zugaenge
+Der konkrete Rotationszeitraum wird noch festgelegt.
 
-- persoenlicher Benutzername
+### Admin-Zugänge
+
+- persönlicher Benutzername
 - eigenes Passwort
 - keine gemeinsam verwendeten Admin-Konten
-- Aenderungen an Benutzern und Rollen protokollieren
+- Änderungen an Benutzern und Rollen protokollieren
 
 ## Anmeldung und Sitzung
 
-1. Benutzer sendet Benutzername beziehungsweise Gruppen-ID und Passwort ueber
+1. Benutzer sendet Benutzername beziehungsweise Gruppen-ID und Passwort über
    HTTPS.
-2. Server prueft Passwort-Hash, Gueltigkeit, Sperrstatus und Rate Limit.
-3. Server erstellt eine normale serverseitige Sitzung.
-4. Der Browser erhaelt nur ein sicheres Session-Cookie.
-5. Jede geschuetzte Route prueft Sitzung, Rolle und Kachel.
+2. Server prüft Passwort-Hash, Gültigkeit, Sperrstatus und Rate Limit.
+3. Server erstellt eine serverseitige Sitzung.
+4. Der Browser erhält nur ein sicheres Session-Cookie.
+5. Jede geschützte Route prüft Sitzung, Rolle und Kachel.
 
 Empfohlene Cookie-Eigenschaften:
 
@@ -133,69 +152,61 @@ Secure
 SameSite=Lax
 ```
 
-Die Sitzung kann in einer kleinen serverseitigen JSON-Datei oder im
-Prozessspeicher liegen. Prozessspeicher ist einfacher, meldet Benutzer bei einem
-Serverneustart jedoch ab. Das ist fuer die erste Version vertretbar.
+Die Sitzung kann im Prozessspeicher liegen. Ein Serverneustart meldet Benutzer
+dann ab; das ist für die erste Version vertretbar.
 
 ## Offline-Verhalten
 
-Es gibt keine Offline-Anmeldung und keine lokal gespeicherte
-Offline-Berechtigung.
+Es gibt keine Offline-Anmeldung und keine lokal gespeicherte Berechtigung.
 
 Bei fehlender Verbindung:
 
-- Loginformular beziehungsweise Loginaktion ist deaktiviert.
-- geschuetzte Kacheln sind nicht offline verfuegbar
+- Login ist deaktiviert.
+- geschützte Kacheln sind nicht offline verfügbar
 - Online-Funktionen werden ausgegraut
-- bereits gecachte oeffentliche Kacheln bleiben lesbar
-
-Damit kann eine serverseitige Sperrung nicht durch alte lokale
-Berechtigungsdaten umgangen werden.
+- gecachte öffentliche Kacheln bleiben lesbar
 
 ## Kachelzugriff
 
-Eine gemeinsame Middleware erhaelt die Kachel-ID:
+Eine gemeinsame Middleware erhält die Kachel-ID:
 
 ```text
 requireTileAccess("forms")
 ```
 
-Sie prueft:
+Sie prüft Sitzung und `minimumRole`. Alle Unterrouten derselben Kachel
+verwenden dieselbe Middleware.
 
-1. Existiert die Kachel?
-2. Ist eine Anmeldung erforderlich?
-3. Besitzt die aktuelle Rolle mindestens `minimumRole`?
-4. Ist die Funktion online erreichbar?
+## WK-Eintragung
 
-Alle Unterrouten derselben Kachel verwenden dieselbe Middleware.
+Die WK-Kachel ist online-only. Neben der Rollenprüfung muss der Principal für
+den aktuellen WK eingetragen sein. Diese Bedingung gilt für die gesamte
+Kachel.
 
-## Identitaet bei Formularen
+Admin hat unabhängig von der Eintragung Zugriff. Der konkrete administrative
+Prozess für Eintragung und Entfernung wird noch definiert.
 
-Bei Gruppenzugaengen kann der Server nur die Gruppe identifizieren. Eine
-optionale Namensangabe ist nicht verifiziert:
+## Identität bei Formularen
 
-```json
-{
-  "principalId": "group-zso-wk-2026",
-  "principalType": "group",
-  "submittedName": "Max Muster",
-  "nameVerified": false
-}
-```
+Formulare speichern immer:
 
-Formulare mit rechtlicher, personeller oder disziplinarischer Bedeutung
-benoetigen einen persoenlichen Account oder einen separaten
-Identitaetsnachweis.
+- Principal-ID
+- Principal-Typ
+- aktuelle Rolle aus der Sitzung
+- optional eingegebenen Sendernamen
+
+Bei Gruppenzugängen ist der Sendername nicht verifiziert. Die gespeicherte
+Rolle ist nach dem Senden unveränderlich.
 
 ## Secrets
 
-Folgende Werte gehoeren nicht in Git:
+Folgende Werte gehören nicht in Git:
 
-- Session-Schluessel
+- Session-Schlüssel
 - Passwort-Pepper, falls verwendet
 - TLS-Private-Keys
 - Produktionskonfiguration mit geheimen Werten
 
-Sie werden ueber geschuetzte Umgebungsvariablen oder den Secret Store des
+Sie werden über geschützte Umgebungsvariablen oder den Secret Store des
 Betriebssystems bereitgestellt.
 

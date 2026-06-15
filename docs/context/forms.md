@@ -2,14 +2,14 @@
 
 ## Ziel
 
-Die Formularfunktion ist eine einfache serverseitige Online-Funktion. Sie
-besteht aus:
+Die Formularfunktion ist eine einfache serverseitige Online-Funktion:
 
-- Verlauf gesendeter Formulare
-- vollstaendiger Read-only-Detailansicht
+- Verlauf der lesbaren gesendeten Formulare
+- vollständige Read-only-Detailansicht
 - Erstellung eines neuen Formulars
 
-Es gibt keine Offline-Entwuerfe und keine Synchronisation.
+Es gibt keine Offline-Entwürfe, nachträgliche Bearbeitung oder
+Synchronisation.
 
 ## Navigation
 
@@ -29,39 +29,43 @@ GET /forms
 ```
 
 Beim Klick auf die Kachel wird direkt der Verlauf angezeigt. Ein Eintrag
-enthaelt mindestens:
+enthält mindestens:
 
-- Formulartyp
-- Erstellungs-/Sendedatum
-- Ersteller oder verwendeter Gruppenzugang
-- Status
+- Titel
+- Themenbereich
+- Datum und Zeit
+- Rolle des Senders
+- Lesestufe
+- optionaler Sendername
 - eindeutige Formular-ID
 
-Auf der Verlaufsseite befindet sich gut sichtbar die Aktion:
+Die Liste wird absteigend nach Datum und Zeit sortiert. Auf der Verlaufsseite
+befindet sich gut sichtbar:
 
 ```text
 Formular erstellen
 ```
 
-Die Liste kann zunaechst absteigend nach Sendedatum sortiert werden. Filter und
-Volltextsuche sind erst spaeter hinzuzufuegen, wenn der Bestand dies wirklich
-erfordert.
+## Sichtbarkeit
 
-## Sichtbarkeit im Verlauf
+Jedes Formular speichert die niedrigste Rolle, die es lesen darf:
 
-Die Kachelberechtigung entscheidet, ob die Formularfunktion verwendet werden
-darf. Innerhalb der Kachel wird keine allgemeine Permission-Engine eingefuehrt.
+```text
+zso < nonCommissionedOfficer < officer
+```
 
-Fuer die Sichtbarkeit ist eine einfache feste Regel festzulegen. Empfohlener
-Start:
+Beispiele:
 
-- persoenlicher Account: eigene gesendete Formulare
-- Gruppenzugang: Formulare dieses Gruppenzugangs
-- Admin: alle Formulare
+- Auswahl `zso`: ZSO User, Unteroffiziere, Offiziere und Admin können lesen.
+- Auswahl `nonCommissionedOfficer`: Unteroffiziere, Offiziere und Admin können
+  lesen.
+- Auswahl `officer`: Offiziere und Admin können lesen.
 
-Falls Offiziere alle Formulare einer Gruppe sehen sollen, wird dies als eine
-einzelne feste Rollenregel in der Formularlogik umgesetzt, nicht als frei
-konfigurierbare Permission.
+Eine tiefere Rolle erhält niemals Zugriff auf ein höher eingestuftes
+Formular.
+
+Admin ist implizit immer leseberechtigt und wird deshalb nie als Option im
+Dropdown angezeigt.
 
 ## Detailansicht
 
@@ -74,16 +78,18 @@ GET /forms/:id
 Beim Klick auf einen Verlaufseintrag werden alle gespeicherten Informationen
 read-only angezeigt:
 
-- Metadaten
-- alle Formularfelder
-- Ersteller- beziehungsweise Gruppeninformation
-- Sendedatum
-- Status
-- Formularvorlagen-Version
+- Titel
+- Themenbereich
+- Datum und Zeit
+- optionaler Sendername
+- beim Senden angemeldete Rolle
+- ausgewählte Lesestufe
+- Nachricht
+- technische Formular-ID
+- Server-Zeitpunkt der Speicherung
 
-Die Anzeige verwendet die beim Senden gespeicherten Feldbezeichnungen und
-Werte. Dadurch bleibt ein altes Formular lesbar, auch wenn die aktuelle
-Formularvorlage spaeter geaendert wird.
+Gesendete Formulare werden nicht bearbeitet. Insbesondere Senderrolle und
+Lesestufe sind nach dem Senden unveränderlich.
 
 ## Formular erstellen
 
@@ -91,52 +97,48 @@ Routen:
 
 ```text
 GET  /forms/new
-GET  /forms/new/:type
 POST /forms
 ```
 
+Das Formular besitzt genau folgende Felder:
+
+| Feld | Typ | Pflicht | Verhalten |
+| --- | --- | --- | --- |
+| Titel | Text | ja | kurze Bezeichnung |
+| Themenbereich | Dropdown | ja | Werte aus `form-topics.yaml` |
+| Datum/Zeit | Datum und Zeit | ja | fachlicher Zeitpunkt |
+| Name Sender | Text | nein | freiwillige Namensangabe |
+| Angemeldete Rolle | Anzeige | ja | serverseitig gesetzt, nicht veränderbar |
+| Lesbar ab Rolle | Dropdown | ja | `zso`, `nonCommissionedOfficer`, `officer` |
+| Nachricht | Mehrzeiliger Text | ja | eigentlicher Inhalt |
+
+Admin wird in `Lesbar ab Rolle` nie angeboten. Admin hat trotzdem immer Zugriff.
+
 Ablauf:
 
-1. Aktion `Formular erstellen` auf dem Verlauf anklicken.
-2. Falls mehrere Typen vorhanden sind, Formulartyp auswaehlen.
-3. Formular ausfuellen.
-4. Serverseitig validieren.
-5. Nach Bestaetigung als einzelne JSON-Datei speichern.
-6. Auf die Detailansicht oder den Verlauf weiterleiten.
+1. `Formular erstellen` anklicken.
+2. Felder ausfüllen.
+3. Serverseitig validieren.
+4. Rolle aus der Sitzung übernehmen, nicht aus dem Request.
+5. Formular als einzelne JSON-Datei speichern.
+6. Auf die Read-only-Detailansicht weiterleiten.
 
-Die Erstellung ist nur online moeglich. Ist das Geraet offline, ist die Aktion
-deaktiviert und zeigt die allgemeine Offline-Meldung.
+Die Erstellung ist nur online möglich.
 
-## Formularvorlagen
+## Themenbereiche
 
-Beispiel:
+Die Themenbereiche werden später fachlich festgelegt. Sie liegen in einer
+einfachen Datei:
 
 ```yaml
-id: material-request
-title: Materialbestellung
-version: 1
-fields:
-  - id: description
-    label: Material
-    type: text
-    required: true
-  - id: quantity
-    label: Anzahl
-    type: number
-    required: true
+topics:
+  - id: general
+    label: Allgemein
+    enabled: true
 ```
 
-Alle Formulartypen verwenden die Berechtigung der Formular-Kachel. Es gibt
-keine zusaetzliche Rolle pro Formularvorlage.
-
-Unterstuetzte Feldtypen der ersten Version sollten begrenzt bleiben:
-
-- Text
-- mehrzeiliger Text
-- Zahl
-- Datum
-- Auswahl
-- Checkbox
+Alte Themenwerte bleiben in bereits gesendeten Formularen als Text erhalten,
+auch wenn ein Thema später deaktiviert oder umbenannt wird.
 
 ## Speicherung
 
@@ -145,25 +147,19 @@ Beispiel:
 ```json
 {
   "id": "f3ebcf2d-65b0-441d-86b0-32c662872343",
-  "formType": "material-request",
-  "formVersion": 1,
-  "submittedAt": "2026-06-15T12:00:00Z",
+  "title": "Material fehlt",
+  "topic": {
+    "id": "general",
+    "label": "Allgemein"
+  },
+  "eventAt": "2026-06-15T14:30:00+02:00",
+  "submittedAt": "2026-06-15T14:31:12+02:00",
   "principalId": "group-zso-wk-2026",
   "principalType": "group",
-  "submittedName": "Max Muster",
-  "status": "submitted",
-  "fields": [
-    {
-      "id": "description",
-      "label": "Material",
-      "value": "Absperrband"
-    },
-    {
-      "id": "quantity",
-      "label": "Anzahl",
-      "value": 4
-    }
-  ]
+  "senderRole": "zso",
+  "senderName": "Max Muster",
+  "minimumReadRole": "zso",
+  "message": "Beim Materialdepot fehlt Absperrband."
 }
 ```
 
@@ -173,15 +169,25 @@ Pfad:
 data/forms/submissions/2026/<id>.json
 ```
 
-Jede Uebermittlung wird als neue Datei geschrieben. In der ersten Version
-werden gesendete Formulare nicht im Browser bearbeitet oder geloescht.
+`senderRole` wird aus der serverseitigen Sitzung gesetzt. Ein im Browser
+manipulierter Rollenwert wird ignoriert.
+
+## Validierung
+
+- Titel und Nachricht dürfen nicht leer sein.
+- Themenbereich muss aktiv und bekannt sein.
+- Datum/Zeit muss gültig sein.
+- Lesestufe muss `zso`, `nonCommissionedOfficer` oder `officer` sein.
+- Lesestufe darf nie `admin` oder `public` sein.
+- Senderrolle muss aus der Sitzung stammen.
+- Die Detailroute prüft die Lesestufe erneut serverseitig.
 
 ## Fehlerverhalten
 
 - Validierungsfehler zeigen die betroffenen Felder.
-- Speicherfehler duerfen keine Erfolgsmeldung erzeugen.
-- Bei Verbindungsabbruch bleibt das ausgefuellte HTML-Formular soweit moeglich
-  sichtbar, wird aber nicht lokal dauerhaft gespeichert.
-- Doppelte POST-Anfragen werden ueber eine Request-ID beziehungsweise
-  Einmal-Token erkannt.
+- Speicherfehler dürfen keine Erfolgsmeldung erzeugen.
+- Bei Verbindungsabbruch bleibt das ausgefüllte HTML-Formular soweit möglich
+  sichtbar, wird aber nicht dauerhaft lokal gespeichert.
+- Doppelte POST-Anfragen werden über eine Request-ID oder ein Einmal-Token
+  erkannt.
 

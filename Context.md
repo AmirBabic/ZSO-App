@@ -2,9 +2,9 @@
 
 ## Zweck dieses Dokuments
 
-Dieses Dokument ist der zentrale Einstiegspunkt fuer den Neuaufbau der ZSO-App.
-Es haelt den bekannten Ist-Zustand, die Anforderungen, die getroffenen
-Architekturentscheide sowie offene Fragen fest. Detailkonzepte liegen unter
+Dieses Dokument ist der zentrale Einstiegspunkt für den Neuaufbau der ZSO-App.
+Es hält den bekannten Ist-Zustand, die Anforderungen und die getroffenen
+Architekturentscheide fest. Detailkonzepte liegen unter
 [`docs/context/`](docs/context/).
 
 ## Projektziel
@@ -12,19 +12,19 @@ Architekturentscheide sowie offene Fragen fest. Detailkonzepte liegen unter
 Die bestehende ZSO-Applikation soll technisch neu aufgebaut werden. Bestehende
 Funktionen und Inhalte sollen erhalten, bereinigt und gezielt erweitert werden.
 Die Architektur soll bewusst flach bleiben und nur Komponenten enthalten, die
-fuer die Anforderungen unmittelbar notwendig sind.
+für die Anforderungen unmittelbar notwendig sind.
 
 Der Neuaufbau soll folgende Funktionen abdecken:
 
 - bestehende Fachbereiche und Referenzinhalte
-- Handkarten
-- Informationen zum WK fuer Kader und Mannschaft
+- Handkarten als fachliche Merk- und Checkkarten
+- Informationen zum WK für Kader und Mannschaft
 - Formulare mit Verlauf und Detailansicht
 - ToDos
 - klar sichtbarer Online-/Offline-Status
 - App-, Build- und Inhaltsversion
 - Anmeldung, Rollen und Benutzerverwaltung
-- oeffentlich zugaengliche Inhalte ohne Anmeldung
+- öffentlich zugängliche Inhalte ohne Anmeldung
 
 ## Repository
 
@@ -40,29 +40,33 @@ servergerenderte Node.js-Anwendung:
 
 - Express 4.16.3
 - express-handlebars 3.0.0
-- Showdown 1.8.6 fuer Markdown
+- Showdown 1.8.6 für Markdown
 - dateibasierte Inhalte unter `node-app/content/`
-- selbst erzeugter Service Worker fuer den Offline-Cache
-- Betrieb urspruenglich auf einer Synology
+- selbst erzeugter Service Worker für den Offline-Cache
+- Betrieb ursprünglich auf einer Synology
 
 ### Vorhandene Funktionen
 
 - Startseite mit Fachbereichskacheln
 - Listenansicht pro Fachbereich
 - Darstellung von Markdown-Inhalten
-- Bilder, Bildvergroesserung und PDF-Downloads
+- Bilder, Bildvergrösserung und PDF-Downloads
 - installierbare PWA
-- rudimentaerer Offline-Cache
+- rudimentärer Offline-Cache
 
 Aktiv verlinkt sind:
 
 - Lage
 - Telematik
-- Unterstuetzung
+- Unterstützung
 - NTP
 
+Diese vier bestehenden Kacheln bleiben im Neuaufbau öffentlich und offline
+verfügbar.
+
 Weitere Inhaltsordner existieren, sind aber teilweise leer, als Backup markiert
-oder nicht in der Navigation erreichbar.
+oder nicht in der Navigation erreichbar. Sie werden nicht automatisch als
+produktive Inhalte übernommen.
 
 ### Inhaltsbestand
 
@@ -84,7 +88,7 @@ Bei der Analyse am 15. Juni 2026 wurden festgestellt:
 - keine CI-Pipeline
 - Fachbereiche und Navigation sind im Code hart codiert
 - fehlende Seiten liefern HTTP 500 statt 404
-- Service-Worker-Cache besitzt keine verlaessliche Inhaltsversionierung
+- Service-Worker-Cache besitzt keine verlässliche Inhaltsversionierung
 - Aktualisierungen alter Offline-Dateien sind nicht robust
 - ein Fehler beim Precache kann die gesamte Installation verhindern
 - interne Links verweisen teilweise auf den alten Synology-Server
@@ -95,14 +99,14 @@ Bei der Analyse am 15. Juni 2026 wurden festgestellt:
 
 ## Sicherheitsstatus
 
-Im Repository waren 17 Zertifikats- und Schluesseldateien unter
-`node-app/RuHuro/` eingecheckt, darunter vier private Schluessel. Sie wurden aus
+Im Repository waren 17 Zertifikats- und Schlüsseldateien unter
+`node-app/RuHuro/` eingecheckt, darunter vier private Schlüssel. Sie wurden aus
 dem aktuellen Repository-Stand entfernt. `.gitignore` blockiert den Ordner und
-gaengige Zertifikats-/Schluesselformate.
+gängige Zertifikats-/Schlüsselformate.
 
 Die Dateien befinden sich weiterhin in der bisherigen Git-Historie, solange
 diese nicht neu geschrieben und force-gepusht wurde. Betroffene Zertifikate und
-Schluessel muessen als kompromittiert behandelt und rotiert werden.
+Schlüssel müssen als kompromittiert behandelt und rotiert werden.
 
 Details: [Migration und Repository-Sicherheit](docs/context/migration-security.md)
 
@@ -114,11 +118,11 @@ Die neue Anwendung bleibt eine einzelne Node.js-Anwendung:
 - servergerenderte Handlebars-Seiten
 - Markdown-Inhalte werden beim Start oder kontrolliert beim Deployment
   eingelesen
-- Vanilla JavaScript fuer kleine Browserfunktionen
-- Service Worker nur fuer offlinefaehige Lesekacheln und deren Inhalte
-- JSON/YAML-Dateien fuer Benutzer, Rollen, Formulare und ToDos
+- Vanilla JavaScript für kleine Browserfunktionen
+- Service Worker nur für offlinefähige Lesekacheln und deren Inhalte
+- JSON/YAML-Dateien für Benutzer, Rollen, Formulare, WK-Daten und ToDos
 - genau eine schreibende Serverinstanz
-- HTTPS ueber Reverse Proxy beziehungsweise Synology
+- HTTPS über Reverse Proxy beziehungsweise Synology
 
 Nicht eingesetzt werden:
 
@@ -134,21 +138,20 @@ Details: [Zielarchitektur](docs/context/architecture.md)
 ## Kachelmodell
 
 Die Startseite ist die zentrale fachliche und technische Struktur. Jede
-Funktion beziehungsweise jeder Inhaltsbereich ist eine Kachel, zum Beispiel:
+Funktion beziehungsweise jeder Inhaltsbereich ist eine Kachel:
 
+- Lage
+- Telematik
+- Unterstützung
+- NTP
 - Handkarten
 - WK-Informationen
 - Formulare
 - ToDos
-- Lage
-- Telematik
-- Unterstuetzung
-- NTP
 - Administration
 
-Die Berechtigung gilt immer fuer die gesamte Kachel. Es gibt keine
-Berechtigungen pro Markdown-Datei, PDF, Formularfeld oder Einzelaktion.
-Saemtliche Inhalte und Unterseiten einer Kachel erben deren Zugriffsstufe.
+Die Berechtigung gilt für die gesamte Kachel. Sämtliche Inhalte und
+Unterrouten einer Kachel erben deren Zugriffsstufe.
 
 Vorgesehene Rollenhierarchie:
 
@@ -161,49 +164,40 @@ Jede Kachel definiert nur:
 - `minimumRole`
 - `offline`
 
-Beispiel:
+Die bestehenden Kacheln Lage, Telematik, Unterstützung und NTP erhalten:
 
 ```yaml
-tiles:
-  - id: handcards
-    title: Handkarten
-    minimumRole: public
-    offline: true
-
-  - id: forms
-    title: Formulare
-    minimumRole: zso
-    offline: false
+minimumRole: public
+offline: true
 ```
 
-Der Server blendet nicht erlaubte Kacheln aus und prueft dieselbe Regel bei
-jedem direkten Routenaufruf.
+Admin ist eine Sonderrolle:
 
-Details: [Authentifizierung, Passwoerter und Rollen](docs/context/authentication.md)
+- Admin hat immer Zugriff auf alle Kacheln und Daten.
+- Admin muss nicht explizit als Zielrolle gespeichert werden.
+- Admin wird in fachlichen Rollenauswahlen, beispielsweise beim
+  Formularzugriff, nie als Option angezeigt.
+
+Details: [Authentifizierung, Passwörter und Rollen](docs/context/authentication.md)
 
 ## Offline-Grundsatz
 
-Offline verfuegbar sind ausschliesslich Kacheln, die mit `offline: true`
-konfiguriert sind. Typischerweise sind dies lesende Referenzinhalte wie
-Handkarten, Fachinformationen, Bilder und ausgewaehlte PDFs.
+Offline ist ein reiner Lesemodus. Die vier heute vorhandenen Inhaltskacheln
+Lage, Telematik, Unterstützung und NTP bleiben vollständig offline
+verfügbar. Handkarten werden ebenfalls als offlinefähige Merk- und
+Checkkarten aufgebaut.
 
 Online-Funktionen werden nicht lokal nachgebaut. Bei fehlender Verbindung:
 
+- WK-Informationen sind deaktiviert.
 - Formulare sind deaktiviert.
 - ToDos sind deaktiviert.
-- Anmeldung und Abmeldung mit Serverkontakt sind deaktiviert.
-- Benutzerverwaltung ist deaktiviert.
-- Nicht offlinefaehige Kacheln werden ausgegraut.
-- Beim Klick erscheint die Meldung, dass die Funktion nur online verfuegbar ist.
+- Anmeldung und Benutzerverwaltung sind deaktiviert.
+- Online-Kacheln werden ausgegraut.
+- Beim Klick erscheint eine Offline-Meldung.
 
-Es gibt keine lokalen Formularentwuerfe, keine lokalen ToDos und keine
-spaetere Synchronisation. Damit entfallen IndexedDB, Konfliktbehandlung und
-Sync-Queues.
-
-Geschuetzte Inhalte werden in der ersten Version nicht offline gespeichert.
-Damit bleiben Rollenpruefung und Sperrung serverseitig eindeutig. Falls spaeter
-geschuetzte Inhalte zwingend offline benoetigt werden, ist dafuer ein separates
-Sicherheitskonzept erforderlich.
+Es gibt keine lokalen Formularentwürfe, keine lokalen ToDos und keine
+spätere Synchronisation.
 
 Details: [Offline-Verhalten](docs/context/offline-behavior.md)
 
@@ -211,39 +205,76 @@ Details: [Offline-Verhalten](docs/context/offline-behavior.md)
 
 Die Kachel `Formulare` ist eine Online-Funktion.
 
+Der Formularverlauf zeigt alle Formulare, deren ausgewählte Lesestufe kleiner
+oder gleich der Rolle des angemeldeten Benutzers ist. Eine tiefere Rolle sieht
+niemals Formulare einer höheren Lesestufe. Admin sieht immer alle Formulare,
+obwohl Admin in der Lesestufen-Auswahl nicht angeboten wird.
+
+Ein Formular enthält:
+
+- Titel
+- Themenbereich aus einem Dropdown
+- Datum und Zeit
+- optionaler Name des Senders
+- aktuelle angemeldete Rolle, read-only
+- niedrigste Rolle, die das Formular lesen darf
+- eigentliche Nachricht
+
+Gesendete Formulare sind read-only. Die beim Senden gespeicherte Rolle kann
+nicht nachträglich bearbeitet werden.
+
 Ablauf:
 
-1. Klick auf die Kachel oeffnet den Formularverlauf.
-2. Der Verlauf zeigt die fuer den angemeldeten Benutzer beziehungsweise dessen
-   Gruppenzugang sichtbaren gesendeten Formulare.
-3. Klick auf einen Eintrag oeffnet eine vollstaendige Read-only-Detailansicht.
-4. Auf der Verlaufsseite befindet sich die Aktion `Formular erstellen`.
-5. Nach Auswahl des Formulartyps wird das Formular ausgefuellt und gesendet.
-6. Nach erfolgreichem Speichern erscheint es im Verlauf.
-
-In der ersten Version gibt es keine Offline-Entwuerfe und kein nachtraegliches
-Synchronisieren. Formulare werden als einzelne JSON-Dateien gespeichert.
+1. Klick auf die Kachel öffnet den Formularverlauf.
+2. Klick auf einen Eintrag öffnet die vollständige Detailansicht.
+3. Auf der Verlaufsseite befindet sich `Formular erstellen`.
+4. Nach erfolgreichem Speichern erscheint das Formular im Verlauf.
 
 Details: [Formularablauf](docs/context/forms.md)
+
+## WK-Informationen
+
+WK-Informationen dürfen Personendaten enthalten. Die Kachel ist online-only
+und erst sichtbar beziehungsweise nutzbar, wenn der angemeldete Principal für
+den aktuellen WK eingetragen ist.
+
+Die Eintragung gilt für die gesamte WK-Kachel und ist keine Berechtigung pro
+Datei oder Feld. Wie die WK-Eintragung administrativ gepflegt wird, wird noch
+genauer definiert.
+
+## ToDos
+
+Die ToDo-Kachel ist online-only.
+
+Feste Hierarchie:
+
+- ZSO User können keine ToDos erstellen.
+- Unteroffiziere können ToDos für ZSO User erstellen.
+- Offiziere können ToDos für Unteroffiziere oder ZSO User erstellen.
+- Admin kann ToDos für alle nicht-administrativen Rollen erstellen.
+- Eine tiefere Rolle kann nie einer höheren Rolle ein ToDo zuweisen.
+- Die Zielgruppe kann das ToDo bearbeiten und abschliessen.
+- Höhere Rollen können ToDos tieferer Rollen einsehen und löschen.
+- Admin hat immer vollen Zugriff, wird aber nicht als Zielgruppe angeboten.
+
+Details: [ToDo-Regeln](docs/context/todos.md)
 
 ## Benutzer- und Rollenmodell
 
 | Rolle | Anmeldung | Typischer Zugriff |
 | --- | --- | --- |
-| Oeffentlich | nein | oeffentliche Offline- und Online-Kacheln |
-| ZSO User | Gruppenlogin oder persoenlich | interne Basisfunktionen |
-| Unteroffizier | Gruppenlogin oder persoenlich | Uof-/Kaderkacheln |
-| Offizier | Gruppenlogin oder persoenlich | Offizierskacheln |
-| Admin | zwingend persoenlich | Administration |
+| Öffentlich | nein | bestehende öffentliche Inhaltskacheln |
+| ZSO User | Gruppenlogin oder persönlich | interne Basisfunktionen |
+| Unteroffizier | Gruppenlogin oder persönlich | Uof-/Kaderfunktionen |
+| Offizier | Gruppenlogin oder persönlich | Offiziersfunktionen |
+| Admin | zwingend persönlich | alle Inhalte und Administration |
 
-Nicht jede Person benoetigt einen persoenlichen Account. Fuer ZSO User,
-Unteroffiziere und Offiziere sind rotierende Gruppenzugaenge moeglich. Ein
+Nicht jede Person benötigt einen persönlichen Account. Für ZSO User,
+Unteroffiziere und Offiziere sind rotierende Gruppenzugänge möglich. Ein
 Gruppenzugang kann eine konkrete Person jedoch nicht beweissicher
 identifizieren.
 
-Benutzerdateien und Passwort-Hashes bleiben ausschliesslich auf dem Server. Sie
-duerfen niemals Bestandteil der ausgelieferten PWA oder eines Offline-Caches
-sein.
+Benutzerdateien und Passwort-Hashes bleiben ausschliesslich auf dem Server.
 
 ## Dateibasierte Serverdaten
 
@@ -253,10 +284,10 @@ Vorgeschlagene Struktur:
 data/
   auth.yaml
   tiles.yaml
+  wk.yaml
   todos.json
+  form-topics.yaml
   forms/
-    definitions/
-      material-request.yaml
     submissions/
       2026/
         <uuid>.json
@@ -266,19 +297,21 @@ data/
 
 Regeln:
 
-- `auth.yaml` enthaelt Rollen, Gruppen und Benutzer mit Passwort-Hashes.
-- `tiles.yaml` enthaelt Kacheln, minimale Rolle und Offline-Status.
-- Formularvorlagen sind YAML-Dateien.
+- `auth.yaml` enthält Rollen, Gruppen und Benutzer mit Passwort-Hashes.
+- `tiles.yaml` enthält Kacheln, minimale Rolle und Offline-Status.
+- `wk.yaml` enthält den aktuellen WK und die eingetragenen Principals.
+- `form-topics.yaml` enthält die später definierten Themenbereiche.
 - Gesendete Formulare werden einzeln als JSON gespeichert.
+- ToDos liegen in einer kleinen zentralen JSON-Datei.
 - Das Audit-Protokoll ist append-only im JSON-Lines-Format.
-- Dateien werden ueber temporaere Dateien und atomare Umbenennung geschrieben.
+- Dateien werden über temporäre Dateien und atomare Umbenennung geschrieben.
 - Schreibzugriffe werden innerhalb des Serverprozesses serialisiert.
 - Es darf nur eine schreibende Serverinstanz geben.
-- Secrets und TLS-Schluessel liegen ausserhalb des Repositories.
+- Secrets und TLS-Schlüssel liegen ausserhalb des Repositories.
 
 ## Versionierung
 
-Die Anwendung soll mindestens folgende Informationen anzeigen:
+Die Anwendung zeigt mindestens:
 
 ```text
 App: 1.0.0
@@ -287,44 +320,62 @@ Commit: a92f70c
 Inhalte: 2026.06.15-2
 ```
 
-Handkarten, WK-Informationen und Formularvorlagen erhalten bei Bedarf eigene
-fachliche Revisionen. Ein Timestamp allein reicht nicht fuer nachvollziehbare
-Releases.
+Handkarten und WK-Informationen erhalten bei Bedarf eigene fachliche Revisionen.
+
+## Zielplattformen
+
+Desktop und Laptop:
+
+- Google Chrome
+- Microsoft Edge
+- Mozilla Firefox
+- Safari auf macOS
+
+Mobil:
+
+- Safari auf iPhone
+- Samsung Internet
+- Google Chrome
+
+Die genauen minimalen Browser-Versionen werden vor der Umsetzung festgelegt.
+Automatisierte Tests sollen Chromium, Firefox und WebKit abdecken. Zusätzlich
+werden reale Tests auf iPhone und Samsung-Geräten benötigt.
+
+## Betriebsumfang
+
+Die Anwendung ist für genau eine ZSO vorgesehen. Mandantenfähigkeit und
+organisationsübergreifende Datenhaltung sind keine Anforderungen.
 
 ## Vorgeschlagene Umsetzungsreihenfolge
 
-1. Schluessel rotieren und Git-Historie bereinigen.
+1. Schlüssel rotieren und Git-Historie bereinigen.
 2. Bestehende Funktionen und Inhalte als Abnahmekatalog erfassen.
-3. Kacheln, Rollenhierarchie und `minimumRole` festlegen.
+3. Kacheln und Rollenhierarchie konfigurieren.
 4. Bestehende Express-Anwendung strukturiert neu aufsetzen.
-5. Reproduzierbares `package.json`, Tests und CI einfuehren.
-6. Inhaltsimport, Linkpruefung und Navigation implementieren.
-7. Service Worker fuer explizit offlinefaehige Lesekacheln implementieren.
-8. Anmeldung und serverseitige Kachelpruefung implementieren.
-9. Formularverlauf, Detailansicht und Erstellung implementieren.
-10. ToDos und Administration als Online-Funktionen ergaenzen.
-11. Mobile, Offline-, Rollen- und Update-Tests durchfuehren.
-12. Pilotbetrieb und anschliessende Umschaltung.
+5. Reproduzierbares `package.json`, Tests und CI einführen.
+6. Bestehende Inhalte und Handkarten migrieren.
+7. Service Worker für öffentliche Offline-Lesekacheln implementieren.
+8. Anmeldung, Admin-Sonderrolle und Kachelprüfung implementieren.
+9. WK-Eintragung und WK-Informationen implementieren.
+10. Formularverlauf, Detailansicht und Erstellung implementieren.
+11. Hierarchische ToDos implementieren.
+12. Administration und Usermanagement ergänzen.
+13. Browser-, Mobile-, Offline-, Rollen- und Update-Tests durchführen.
+14. Pilotbetrieb und anschliessende Umschaltung.
 
-## Offene fachliche Fragen
+## Noch offene fachliche Fragen
 
-- Sind "Handkarten" fachliche Merk- und Checkkarten oder geografische Karten?
-- Welche Kacheln sind fuer welche minimale Rolle sichtbar?
-- Welche Kacheln sollen tatsaechlich offline verfuegbar sein?
-- Welche Formulartypen werden benoetigt?
-- Welche Formulare darf ein Gruppenlogin im Verlauf sehen?
-- Muessen Formulare einer verifizierten Person zugeordnet werden?
-- Duerfen WK-Informationen Personendaten enthalten?
+- Welche Themenbereiche stehen im Formular-Dropdown zur Auswahl?
+- Wie wird ein Principal für einen konkreten WK eingetragen und entfernt?
 - Wie oft werden Gruppenzugangscodes rotiert?
-- Wer darf ToDos erstellen, zuweisen, abschliessen und loeschen?
-- Wird die Anwendung nur von einer ZSO oder von mehreren Organisationen genutzt?
-- Welche Geraete und Browser muessen verbindlich unterstuetzt werden?
+- Welche minimalen Versionen der Zielbrowser werden unterstützt?
 
 ## Detaildokumente
 
 - [Zielarchitektur](docs/context/architecture.md)
 - [Offline-Verhalten](docs/context/offline-behavior.md)
 - [Formularablauf](docs/context/forms.md)
-- [Authentifizierung, Passwoerter und Rollen](docs/context/authentication.md)
+- [ToDo-Regeln](docs/context/todos.md)
+- [Authentifizierung, Passwörter und Rollen](docs/context/authentication.md)
 - [Migration und Repository-Sicherheit](docs/context/migration-security.md)
 
